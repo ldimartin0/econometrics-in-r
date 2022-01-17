@@ -1,7 +1,7 @@
 ---
 title: "Econometrics in R"
 author: "Luke DiMartino"
-date: "December 18th, 2021"
+date: "January 9th, 2022"
 output: 
   pdf_document:
     toc: true
@@ -9,6 +9,9 @@ output:
     highlight: tango
     number_sections: true
     latex_engine: xelatex
+    keep_tex: false
+    includes:
+      in_header: "preamble.tex"
 urlcolor: blue
 ---
 
@@ -20,25 +23,26 @@ library(hrbrthemes)
 library(ggplot2)
 theme_set(theme_bw())
 ```
+
 \newpage
 
 # Introduction
 
 ## Purpose
 
-In this paper, I summarize methods for conducting statistical tests and fitting regressions from introductory econometrics (at Georgetown, the Introduction to Econometrics class) in the R programming language. Despite my experience with data import, wrangling, cleaning, and visualization in R, I know nearly nothing about modelling in R - the vast majority of my experience modelling is from economics classes taught in Stata. 
+In this paper, I summarize methods for conducting statistical tests and fitting regressions in the R programming language. I cover every technique, test, and model of introductory econometrics with packages capable of handling significantly more complex use cases. Despite my experience with data import, wrangling, cleaning, and visualization in R, I know nearly nothing about modelling in R - the vast majority of my experience modelling is from economics classes taught in Stata. As such, I frequently compare the two languages and refer to the Stata equivalent command.
 
-This paper logs my own work learning the regression workflow in R. My goal is to learn the best methods for developing models in R that are simple but can extend beyond introductory econometrics. Since I suspect some people, particularly undegraduates at Georgetown, have experience similar to my own, I have dedicated a few hours to transforming my work into this open-source guide for anyone in a similar position to myself.[^prereq] If you are in this position, this paper may be helpful to you. Beyond the mathematics, the only other pre-requisite is a basic understanding of R. I frequently refer to Stata's regression workflow, but it is not a necessary reference point.
+This paper logs my own work learning the regression workflow in R. My goal was to learn the best methods for developing models in R that are simple but can extend beyond introductory econometrics. Since I suspect some people, particularly undergraduates at Georgetown, have experience similar to my own, I have dedicated a few hours to transforming my work into this open-source guide.[^prereq] If you are in this position, this paper may be helpful to you. Beyond the mathematics, the only other pre-requisite is a basic understanding of R. I refer to Stata, but it is not a necessary reference point.
 
-[^prereq]: I suspect I am in a somewhat large group of people who know the math (or enough of it, at least) to do basic econometric analysis, but learned to conduct it in Stata. As an undergrad at Georgetown, at least, that is standard. 
+[^prereq]: I suspect there is a somewhat large group of people who know the math (or enough of it, at least) to do basic econometric analysis, but learned it in Stata. As an undergrad at Georgetown, that is standard. 
 
-The license for this is in the GitHub repository in which it is stored. In short, distribute this to whomever you please.
+The license is in the [GitHub repository](https://github.com/ldimartin0/econometrics-in-r) in which it is stored. In short, distribute this to whomever you please.
 
-Since I am well-versed in data import, wrangling, and visualization in R, I will avoid these topics, except when they are a relevant to the workflow of developing models. There is ample high-quality, free instructional material on these topics: [Data Science for R](https://r4ds.had.co.nz/) by Hadley Wickham and Garrett Grolemund is the standard recommendation for new R users. [Modern R](https://b-rodrigues.github.io/modern_R/) by Bruno Rodrigues, although unfinished, is a rigorous introduction to R's data structures and functional programming capabilities.
+Since I am well-versed in data import, wrangling, and visualization in R, I will avoid these topics, except when they are relevant to the workflow of developing models. There is ample high-quality, free instructional material on these topics: [Data Science for R](https://r4ds.had.co.nz/) by Hadley Wickham and Garrett Grolemund is the standard recommendation for new R users. [Modern R](https://b-rodrigues.github.io/modern_R/) by Bruno Rodrigues, although unfinished, is a rigorous introduction to R's data structures and functional programming capabilities.
 
 ## Workflow
 
-R's workflow for analysis is a bit different than Stata's. The famous saying to remember is:
+R's workflow for analysis is different than Stata's. The famous saying to remember is:
 
 > "Everything in R is an object, and everything that happens in R is a function call."
 
@@ -65,15 +69,15 @@ In layering advanced functionality, like single commands/functions for complex m
 
 R has the same functionality in open-source packages. It is difficult to overstate how great the R open-source community is and how easy programming is with well-built R packages that cover every general-purpose programming and data science topic.[^rpckgs] The downside is that to learn new techniques, you must choose between multiple packages and become familiar with the syntax and output of one.[^dependency]
 
-[^dependency]: Packages may also have dependency issues or stop receiving updates. In my opinion, this disadvantage is heavily overstated. The community is large and strong enough that the requisite packages to do undergraduate/master's econometrics are constantly updated. Computer scientists get worried about dependencies because their code goes into production - it is executed on a server automatically and in quasi-constant operation. Therefore, if one function fails, the entire system probably will too. If a data analysis tool is going to stop receiving updates, users and dependent packages have months if not years from the initial announcement to find a different tool. An analysis may not be precisely reproducible, but stored results remain valid.
+[^dependency]: Packages may also have dependency issues or stop receiving updates. In my opinion, this disadvantage is overstated by people advertising packages/software light on or totally free of dependencies. The community is large and strong enough that the requisite packages to do undergraduate/master's econometrics are constantly updated, because economists rely on them. Computer scientists get worried about dependencies because in production, if one small thing fails, the system may fail as well. When a data analysis tool stops receiving updates, users and dependent packages will have had months if not years of advance notice.
 
-[^rpckgs]: As of December 2021, there are more than 18,000 certified packages on the [Comprehensive R Archive Network (CRAN)](https://cran.r-project.org/), where R looks when you call `install.packages()`. There are thousands more on GitHub and stored locally by R users everywhere.
+[^rpckgs]: As of December 2021, there are more than 18,000 certified packages on the [Comprehensive R Archive Network (CRAN)](https://cran.r-project.org/). This is where R looks when you call `install.packages()`. There are thousands more on GitHub and stored locally by R users everywhere.
 
 [^firstnote]: A brief defense of R: Modelling is Stata's bread-and-butter. R's advantages are in every other part of the workflow: R has general programming language features that are well-optimized, like simultaneous storage for multiple objects/datasets, optimized looping and conditionals, operating system interaction functions, command line access, easy API integration, and custom function and package development, not to mention the `tidyverse`, the best combination of power and simplicity for data import, wrangling, and visualization.
 
-    R's large open-source community is constantly developing new packages that multiply R's power. Look at how many packages I use in this paper alone! The `wooldridge` package is a simple example. Instead of downloading, storing, and managing dozens of datasets, I can call them with `d <- wooldridge::dataset_name`. 
+    R's large open-source community is constantly developing new packages that multiply R's power. Look at how many packages I use in this paper alone! Even actions like packaged data are great. Instead of downloading, storing, and managing dozens of datasets, I can call them with `d <- wooldridge::dataset_name`.
     
-    R is substantially faster than Stata as well. Stata's speed with larger datasets is arguably the lynchpin factor in industry for abandoning Stata. If you are interested in data science, Stata simply lacks functionality for advanced models including machine learning regression and classification techniques, natural language processing, and the like. R also has a native presentation format, RMarkdown, which I used to compose this document. I did little more than type the text you see, prepend 15 lines of format settings, and mark off code chunks. `knitr` compiles this document using LaTeX, prints the code output, and voila! The total time to knit it is about 20 seconds, with integrated code and output, and support for LaTeX equations if we were to need it.
+    R is substantially faster than Stata as well. Stata's speed seems to me to be the lynchpin factor in industry for abandoning Stata. If you are interested in data science, Stata lacks functionality for advanced models including machine learning regression and classification techniques, natural language processing, and the like. R also has a native presentation format, RMarkdown, which I used to compose this document. I did little more than type the text you see, prepend 15 lines of format settings, and mark off code chunks. `knitr` compiles this document using LaTeX, prints the code output, and voila! The total time to knit it is about 20 seconds, with integrated code and output, and support for LaTeX equations if we were to need it.
     
     Few of these features matter with the small, curated datasets in this paper, but in a standard project involving data management, API calls, and data cleaning Stata will struggle while R hits its stride.
 
@@ -81,13 +85,22 @@ R has the same functionality in open-source packages. It is difficult to oversta
 
 ## Data
 
-I exclusively use  data from the `wooldridge` package. For more information on any dataset, find the `wooldridge` documentation [here](https://www.rdocumentation.org/packages/wooldridge/versions/1.4-2).
+I exclusively use  data from the `wooldridge` package. For more information on the data, find the `wooldridge` documentation [here](https://www.rdocumentation.org/packages/wooldridge/versions/1.4-2).
+
+## Todo
+
+This is a list of the remaining things to do.
+
+* ADF tests
+* Newey West standard errors
+* GLM Explanations
+* Correct for Style
 
 \newpage
 
 # Setup
 
-This is information required to recreate my code. Ignore this section if you are reading as a reference.
+This is information required to recreate my code. Ignore this section if you are reading as a reference. Be aware that many of these packages have namespace conflicts.
 
 ## Packages
 
@@ -229,10 +242,9 @@ ggplot(d) +
 			 subtitle = "Data and Fitted Values")
 ```
 
-Let's extract the standard errors and confidence intervals from our model. This is one of the major shortcomings of the `summary()` function - we don't see them right away.
+Let's extract confidence intervals from our model. This is one of the major shortcomings of the `summary()` function - we don't see them right away.
 
 ```{r ols base 4, comment=""}
-coef(lm_base)
 confint(lm_base, level = .95)
 ```
 
@@ -240,22 +252,21 @@ Great work! This exactly matches Stata's output.
 
 ## Heteroskedasticity Robustness with `sandwich`, `lmtest`, and `estimatr`
 
-Economists often contend with heteroskedastic standard errors.[^robust] Standard errors are a somewhat complex topic in R and the workflow for managing them is very different than Stata. I highly recommend reading [this blog post](https://grantmcdermott.com/better-way-adjust-SEs/) by Grant McDermott, I will summarize it below.
+Economists often contend with heteroskedastic standard errors.[^robust] Standard errors are a somewhat complex topic in R and the workflow for managing them is very different than Stata. I recommend reading [this blog post](https://grantmcdermott.com/better-way-adjust-SEs/) by Grant McDermott, but I will summarize it below.
 
 [^robust]: Technically, calling a model robust means nothing. However, since this seems somewhat standard in economics, and perhaps because of the option in Stata, I use robust to denote models that are calculated with standard errors robust to heteroskedasticity.
 
 A few facts about standard errors:
 
-1. The computationally-intensive part of modelling is fitting a model, especially with generalized linear models that require the computer to solve (get arbitrarily close to the answer to) complex optimization problems. Standard error calculations are trivial in comparison - they only require a few steps of simple arithmetic for each observation.
+1. The computationally-intensive part of modelling is fitting a model. Standard error calculations are trivial in comparison because they only require a few steps of simple arithmetic for each observation.
 2. Fitting finds predicted values. Standard error specifications do not change the fitted values or the regression coefficients.
 3. Standard errors affect some, but not all regression evaluation statistics.
 
 In Stata, the syntax breaks down these truths about standard errors. `reg y x` and `reg y x, robust` seem to be two different models. Stata requires the declaration of a certain standard error specification "at estimation time," meaning when the model is fit (the coefficients derived and predicted values found).
 
-R gives the user the option of modifying standard errors in "post-estimation time," meaning after the model is fit. While the `lm()` model does contain standard errors, they can be easily modified. Why prefer post-estimation? Well, it's complicated. For high-dimensional models or large data sets, computational power is an constraint. It is better to fit the model once, then extract different standard error calculations. It also makes model comparison more intuitive and abides by the coding principle DRY (Don't Repeat Yourself), because the regression function is only called once.
+R gives the user the option of modifying standard errors in "post-estimation time," meaning after the model is fit. While the `lm()` model does contain standard errors, they can be easily modified. Why prefer post-estimation? Well, it's complicated. For high-dimensional models or large data sets, computational power is a constraint. It is faster to fit the model once then extract different standard error calculations. It also makes model comparison more intuitive and abides by the coding principle DRY (Don't Repeat Yourself), because the regression function is only called once.
 
 Here is how this all works in practice. These data are worker wage data, each observation is a worker. 
-
 
 ```{r HCr}
 d <- wooldridge::wage1
@@ -272,7 +283,7 @@ ggplot(d) +
 
 To calculate "HC" standard errors, use the `sandwich` package, which computes robust covariance matrix estimators `vcovHC()` supports common heteroskedasticity-robust standard error calculations, while some other functions support other standard errors. `coeftest()` from the `lmtest` package provides an analysis of coefficients. 
 
-The syntax here is critical to remember: `vcov`, in many model analysis functions, takes a standard error calculation method. In newer packages, it may have shortcuts like `iid`, `robust`, `HC`, and `stata`. In any model analysis that is affected by standard errors, post-estimation functions must take a `vcov` specification for heteroskedasticity robustness.
+The syntax here is critical to remember: `vcov`, in many model analysis functions, takes a standard error calculation method. In newer packages, it may have shortcuts like `iid`, `robust`, `HC`, and `stata`. In any model analysis that is affected by standard errors, post-estimation functions must take a `vcov` specification for heteroskedasticity robustness. That means model visualizations may also require `vcov` parameter specification.
 
 The mathematics of different types are in the documentation.
 
@@ -282,16 +293,15 @@ coeftest(lin_mod)
 coeftest(lin_mod, vcov = vcovHC(lin_mod, type = "HC1"))
 ```
 
-While it does not affect the statistical significance in this case (this model is laughably simplistic), the difference between the t values should indicate the importance of standard error specification.
 
-There is also the option to include heteroskedasticity-robust standard errors from the start, using the package `estimatr`. Unfortunately, the support for this package is sorely lacking, so it does not work in nearly every use case. I use post-estimation specification because it is really the only option for time-series and panel data. Conveniently, the `summary()` output of a `lm_robust()` model is more detailed, clearer, and even more similar to Stata output.
+There is also the option to include heteroskedasticity-robust standard errors from the start, using the package `estimatr`. Unfortunately, the support for this package is sorely lacking, so it does not work in every use case. I use post-estimation specification because it is really the only option for time-series and panel data. Conveniently, the `summary()` output of a `lm_robust()` model is more detailed, clearer, and even more similar to Stata output.
 
 ```{r 1.3 robust model gen, comment=""}
 lm_rob_mod <- lm_robust(wage ~ educ, data = d)
 summary(lm_rob_mod)
 ```
 
-There is one major issue with this package - it automatically applies the `na.action = na.pass` to the internal `lm()` call. Therefore, when there are `NA` values in the relevant variables in the data frame, `predict()` will not work. There are three options to resolve this.
+There is a major issue with this package - it automatically applies the `na.action = na.pass` to the internal `lm()` call. Therefore, when there are `NA` values in the relevant variables in the data frame, `predict()` will not work. There are three options to resolve this.
 
 1. If the problem requires predicted values, use some version of `na.omit()` to clean the data frame beforehand. [^na.omit]
 2. Use the `commarobust()` function to transform an `lm(..., na.action = na.exclude)` variable into a `lm_robust()` object. In most of my test cases, these transformations worked.[^stata-pun]
@@ -301,17 +311,18 @@ There is one major issue with this package - it automatically applies the `na.ac
 [^stata-pun]: Credit to the authors of `estimatr` for a great Stata pun.
 
 
-Since `estimatr` plays so nice with `summary()`, a great function for analyzing regressions in development, it may seem easier from a workflow perspective - why use a regression function that requires two different functions for analysis. Hold on for one short subsection on multiple regression before I outline some post-estimation-standard-error-friendly methods for analyzing regressions that are even better than `summary()`!
+Since `estimatr` plays so nice with `summary()`, a great function for analyzing regressions in development, it may seem easier from a workflow perspective - no need to use a regression function that requires two different functions for analysis. Hold on for one short subsection on multiple regression before I outline some post-estimation-standard-error-friendly methods for analyzing regressions that are even better than `summary()`!
 
 ## Multiple Regression
 
-Like Stata, R computes regression models with matrix algebra, so the computation is already generalized to multiple regression. In other words, the same functions work, they just require partiuclar syntax. The `lm()` function `formula` argument is in R's formula syntax, which (when an equation is called for) replaces `=` with `~`. Hence, `y ~ x`. For multiple regression, the syntax is: `y ~ x1 + x2 + x3`...
+Like Stata, R computes regression models with matrix algebra, so the computation is already generalized to multiple regression. In other words, the same functions work, they just require a particular syntax. The `lm()` function `formula` argument is in R's formula syntax, which (when an equation is called for) replaces `=` with `~`. Hence, `y ~ x`. For multiple regression, the syntax is: `y ~ x1 + x2 + x3`...
 
 
 ```{r 1.4 setup, comment=""}
 d <- wooldridge::big9salary
-
 d <- mutate(d, salaryk = salary/1000)
+d <- select(d, prof, female, salaryk)
+datasummary_skim(d, output = "kableExtra")
 
 lm_mul_mod <- lm(salaryk ~ female + prof, data = d)
 summary(lm_mul_mod)
@@ -462,7 +473,13 @@ This chapter encompasses everything that supports regression analysis including 
 
 ## F Test
 
-Before we conduct an F-test, let's fit robust models.
+F-tests in R are slightly more complicated than in Stata. The F-test is either performed as a joint test on an entire model, or performed as a comparison between models, so the first-level abstraction is different than in Stata.[^abstraction]
+
+[^abstraction]: In Stata, the abstraction, as evidenced by the syntax, is the null hypothesis that the variables are equal to zero. In R, the primary abstraction is the comparison of models with and without the relevant variables.
+
+The overall/joint F-test is performed in `lm()` and `lm_robust()` so the use cases of this function are rather limited.
+
+Here are some models to use.
 
 ```{r 2.1 setup, comment=""}
 d <- wooldridge::wage2
@@ -473,26 +490,24 @@ lm_mod <- lm(lwage ~ educ, data = d)
 mr_mod <- lm(lwage ~ educ + IQ + KWW, data = d)
 ```
 
-F-tests in R are slightly more complicated than in Stata. The F-test is either performed as a joint test on an entire model, or performed as a comparison between models, so the first-level abstraction is different than in Stata.[^abstraction]
-
-[^abstraction]: In Stata, the abstraction, as evidenced by the syntax, is the null hypothesis that the variables are equal to zero. In R, the primary abstraction is the comparison of models with and without the relevant variables.
-
-The overall/joint F-test is performed in `lm()` and `lm_robust()` so the use cases of this function are rather limited.
+Again, this test statistic is reported by `summary()`.
 
 ```{r 2.1 F test joint, comment=""}
 waldtest(mr_mod, vcov = vcovHC, test = "F")
 ```
 
-F-tests are often required to evaluate the addition of new variables to the model. Unfortunately, R's syntax is verbose because it requires declaring models with and without the variables of interest.
+F-tests are often required to evaluate the addition of new variables to a model. Unfortunately, R's syntax is verbose because it requires declaring models with and without the variables of interest.
 
-Here, let's examine whether `meduc` and `feduc` should be added to the model.
+This test examines whether `meduc` and `feduc` should be added to the model specification.[^verboseF]
+
+[^verboseF]: This test is particularly verbose, so a utility function might be useful - see the last chapter's section on utility functions.
 
 ```{r 2.1 F test, comment=""}
 mr_mod_2 <- lm(lwage ~ educ + IQ + KWW + meduc + feduc, data = d)
 waldtest(mr_mod, mr_mod_2, vcov = vcovHC, test = "F")
 ```
 
-Of course, you could always do the same thing in-line.
+Of course, inline declaration works and is perhaps more clear.
 
 ```{r 2.1 F test inline, comment=""}
 waldtest(
@@ -510,11 +525,11 @@ This is returns the same calculations as Stata.[^stata-f-test]
 
 Dummy variables, formally Bernoulli variables, take values 1 or 0. They are used to include categorical variables in regression or to simplify regression interpretation.[^dummy-ex]
 
-[^dummy-ex]: Instead of regression on `yrs_educ`, we could create a dummy `hs` that takes 1 if the observation graduated high-school and 0 if not, and the same for college. While less precise, the interpretations of the coefficients on each might be more clear than the coefficient of `yrs_educ`.
+[^dummy-ex]: Instead of regressing on `yrs_educ`, we could create a dummy `hs` that takes 1 if the observation graduated high-school and 0 if not, and the same for college. While less precise, the interpretations of the coefficients on each might be more clear than the coefficient of `yrs_educ`.
 
 `dplyr` is necessary to generate dummies from continuous variables, like the `gen ... replace ... if` workflow in Stata. `if_else()` with `mutate()` creates the new dummy.[^ifelse]
 
-The data are from Botswana’s 1988 Demographic and Health Survey. There are 4361 women with 27 variables of information about each.
+These data are from Botswana’s 1988 Demographic and Health Survey. There are 4361 women with 27 variables of information about each.
 
 ```{r 2.2 dummy dplyr, comment=""}
 d <- wooldridge::fertil2
@@ -546,8 +561,7 @@ lm_mod_no_int <- lm(uclms ~ -1 + factor(month), data = d)
 parameters(lm_mod_no_int)
 ```
 
-
-To create variables in the data object, use `fastDummies::dummy_cols()`. Writing them for regression, though, is horribly tedious, so instantiate them in the data frame only when absolutely necessary.
+To create dummy variables in the data frame, use `fastDummies::dummy_cols()`. Writing them in a formula is horribly tedious so instantiate them in the data frame only when absolutely necessary.
 
 ```{r 2.2 dummy fastdummies, comment=""}
 d <- dummy_cols(d, select_columns = "month")
@@ -736,7 +750,7 @@ This is a perfect case study of when using a more complex package is counter-pro
 ggdid(did_fit)
 ```
 
-## Autoregression Models (Time Series Data)
+## Autoregression Models (Time Series Data) with `tsibble` and `fable`
 
 Time series data is characterized by naturally ordered observations occurring over time.
 
@@ -883,9 +897,9 @@ Instrumentation is another technique to counter endogeneity, particularly when m
 
 Instrumental variable regression has great implementation in R in a number of settings.[^iv-imp-choice]
 
-[^iv-imp-choice]: `ivreg` is my default choice because of its syntactical similarity to Stata. However, `fixest` also has excellent support for IV regression with both panel and non-panel data.
+[^iv-imp-choice]: `ivreg` is my default choice because of its syntactical similarity to Stata. However, `fixest` also has excellent support for IV regression with both panel and non-panel data. `fixest` is so good that there is an argument to be made that it is the best method for most all linear regression analysis in R.
 
-This data is from paper written by David Card. It is a standard wage dataset.
+This data is from paper written by David Card. It is a standard wage data set with an observation for each worker.
 
 ```{r iv setup}
 d <- wooldridge::wage2
@@ -926,7 +940,7 @@ Logistic regression is an essential tool for binary response variables.
 
 An important caution: functions that take models as arguments (`summary()`, any `broom` function, etc.) are not one, super flexible function. Instead, like many complex functions, these functions merely determine the type of the model that has been passed to the function then call a method (a type of function) built specifically for that object.[^try] That was not an important piece of information until now because most functions are built for `lm()` and other linear models. With `glm()` models, though, you will need to refer to the function's `.glm()` method for documentation, because issues will arise - see an example with `broom` in the next code chunk.
 
-[^try]: Try calling `summary.lm()` on an `lm` object. It is also worth noting that model fitting functions rely on methods, like `lm.fit()`. In some big data/simulation applications, this matters - `lm.fit()` and it's even slimmer and faster parner, `.lm.fit()`, are up to 2x as fast. Regardless, when experiencing problems with more complex functions, often times the solution is in the documentation for the method, especially with the less common use cases.
+[^try]: Try calling `summary.lm()` on an `lm` object. It is also worth noting that model fitting functions rely on methods, like `lm.fit()`. In some big data/simulation applications, this matters - `lm.fit()` and it's even slimmer and faster partner, `.lm.fit()`, are up to 2x as fast. Regardless, when experiencing problems with more complex functions, often times the solution is in the documentation for the method, especially with the less common use cases.
 
 ```{r probit test}
 set.seed(48)
@@ -993,8 +1007,6 @@ ggplot(df) +
 
 ## Tobit with `survival` and `AER`
 
-
-
 ```{r tobit}
 d <- wooldridge::smoke
 d <- select(d, cigs, age, income)
@@ -1007,7 +1019,7 @@ msummary(tob_fit,
 				 output = "latex_tabular")
 ```
 
-## Heckman with `ssmrob`
+## Heckman with `sampleSelection`
 
 The Heckman model, also known as the Type II Tobit or, coloquially, the Heckit, is a variant of the Tobit model used to correct bias from non-randomly selected sample or an incidentally truncated dependent variable.
 
@@ -1030,11 +1042,13 @@ Be aware that the default method, `method = "2-step"`, is the equivalent of `hec
 
 # Conclusion and Additional Resources
 
-Thank you for reading, I hope this was as helpful for you as it was for me to write! One of the great things about well-documented open-source packages is that learning them is fairly straightforward - the documentation was written for the most general, inexperienced audience. But, finding them can be a challenge. Here is a list of resources that might help you learn something new in R.
+Thank you for reading, I hope this was as helpful for you as it was for me to write! One of the great things about well-documented open-source technologies is that learning them is straightforward - the documentation was written for the most general, inexperienced audience. But, finding them can be a challenge. Here is a list of resources that might help you do econometric analysis or learn something new about R.
 
-## Functions
+## Utility Functions
 
-R's verbosity can be annoying at times. Defining some of your own functions, even if they are just wrappers for one function, can save time and make code substantially more readable.
+R's verbosity can be annoying at times. Custom utility functions, which are often just wrappers with parameter defaults, make writing and reading code easier.[^wrappers]
+
+[^wrappers]: A wrapper is a function whose main purpose is to call another function, often with some parameters or perhaps some extra computation. In the case of `msum_rob()`, I set defaults for the standard errors, statistic display, stars, and output format (although you may choose to eliminate the output format argument and make your function always use `gt`, I must keep it to change to `latex_tabular` for the purposes of knitting this document). Since the defaults are all set, the verbose calls to `msummary()` with the same parameters can be changed to a call to `msum_rob()`.
 
 ```{r utility funcs}
 msum_rob <- function(list_models, 
@@ -1055,25 +1069,22 @@ msum_rob <- function(list_models,
 }
 msum_rob(lm_fit, output_format = "latex_tabular")
 
-single_F <- function(model) {
-	return(waldtest(model, vcov = vcovHC, test = "F"))
-}
-
 joint_F <- function(model1, model2) {
 	return(waldtest(model1, model2, vcov = vcovHC, test = "F"))
 }
 ```
 
-## Review and Validation in Econometrics
+## Review and Validation
 
-If you want simpler review materials (or external validation), check out [RStudio's Stata to R cheatsheet](https://github.com/rstudio/cheatsheets/blob/main/stata2r.pdf).[^give-up] I also took a lot of recommendations from University of Oregon Professor Grant McDermott's [Data Science for Economists open-sourced lecture notes](https://raw.githack.com/uo-ec607/lectures/master/08-regression/08-regression.html#Regression_basics).
+For simpler review materials (or external validation), check out [RStudio's Stata to R cheatsheet](https://github.com/rstudio/cheatsheets/blob/main/stata2r.pdf).[^give-up] If you don't trust me to find the best packages (valid!), cross-reference my choices with University of Oregon Professor Grant McDermott's [Data Science for Economists open-source lecture notes](https://raw.githack.com/uo-ec607/lectures/master/08-regression/08-regression.html#Regression_basics).
 
-[^give-up]: When I found this halfway through working through this paper, my initial reaction was to give up and just refer to it when necessary. However, it's missing a lot of critical techniques, like time series, which is one of the most crowded spaces in R statistical analysis - I sorted through `base` and half a dozen other packages before finding `fable` and `tsibble`, a combination which I think is really straightforward and covers the ground not covered well by `base`.
+[^give-up]: I found this when I was halfway through learning the materials in this lecture. My initial reaction was to give up, and refer to it when necessary, but it's missing a lot of critical techniques, like time series, which is one of the most crowded spaces in R statistical analysis - I sorted through `base` and half a dozen other packages before finding `fable` and `tsibble`. It also misses enough of content and workflow that I'm hopeful this guide is still useful.
 
 ## Package Exploration
 
 There are more packages that are worth mentioning. 
 
+* The `tidyverse` is in fact a collection of packages, but it is worth learning thoroughly; beyond the fundamentals of `dplyr` and `tidyr`, you should at least be aware of the packages written for specific use cases (like `stringr` and `glue` for string work) and learn them when you first need them
 * `MASS` does some back-end statistical computation - it's worth exploring for more niche statistical tests and matrix algebra work
 * `tigerstats` is a great package for simulating data and statistical tests[^comp-to-base] 
 * `easystats` other packages provide additional tools for modelling analysis
@@ -1082,12 +1093,14 @@ There are more packages that are worth mentioning.
 * `data.table` is a package worth knowing if you work larger data sets
 * `rio` makes importing and exporting data a breeze and is substantially faster than the `tidyverse` `readr` package and the `base` `read.*()` family of functions
 * `AER`, which I only used for Tobit, is a legendary econometrics package that has slowly lost almost all of its functions, but retains iconic, quality data sets[^aer]
+* `survival`, which I loaded only for Tobit, is a package full of survival analysis features
+* `zoo` is connected to the `base` methods for time-series analysis, and while I am not fond of them, they are quire popular
 
 [^aer]: Many of the best econometrics packages, including `ivreg`, emerged from `AER`. Notably, while `AER` has more than 100 datasets, it retainsonly  two functions, `ivreg()` and `tobit()`, an interface to `survival`, a package that also computes a Tobit model.
 
 [^comp-to-base]: `base` has much of the same functionality, but `tigerstats` improves dramatically on the implementation and makes code much more readable.
 
-**If you want more depth**, work through the packages used above. I estimate that I covered about 20\% of the overall utility of each. Read documentation, test example code, and follow dependencies to understand what a package offers. To broaden your skillset, learn the tools of one package deeply is a great return on investment. Of course, it also may be worth exploring different packages.[^func-layers]
+**If you want more depth**, work through the packages used above. I estimate that I covered about 20\% of the overall utility of each. Read documentation, test example code, and follow dependencies to understand what a package offers.[^func-layers]
 
 [^func-layers]: One chain worth following is the *fit functions. Lots of packages have a private package that underlies their analysis. For example, `fable` is essentially a wrapper around `fabletools`, which does a lot of the computation. Understanding what packages are being used to do the computation and what those depend on can be really beneficial when trying to find the right tool for the problem.
 
@@ -1099,9 +1112,13 @@ There are more packages that are worth mentioning.
 
 The R community online is incredibly strong. That means, first and foremost, that there are many high-quality, free sources of information. It also means your questions can get answered on Twitter or StackOverflow quickly. The only important caution: know the author and their field. Every subfield (particularly the triangle of computer science, data science, and economics) has its own quirks.[^caution]
 
-[^caution]: Data science and economics tools overlap, but are not identical. Heteroskedasticity-robust standard errors are not the norm in data science and much more of data science is focused on prediction, not inference. On the other hand, economists often write awful code and rarely use the best tools for the task. Don't be surprised when you find an economics in R textbook doing all of their cleaning and visualization in `base`.
+[^caution]: Data science and economics tools overlap, but are not identical. Data science tools often heavy data pre-processing, because interpreting results for inference takes the backseat to calibrated prediction. On the other hand, economists often write awful code and rarely use the best tools for the task. Don't be surprised when you find an economics in R textbook doing all of their cleaning and visualization in `base`.
 
-**If you want more R**, the community is mostly on Twitter, GitHub, and the blogosphere. Twitter (follow #rstats, it is incredibly lively) is a great place to start. You will quickly come across [rbloggers.com](https://www.r-bloggers.com/), a website that compiles posts from more than 300 blogs. A compilation of the best R stuff is available on [R Weekly](https://rweekly.org/).
+**If you want more R**, the community is mostly on Twitter, GitHub, and the blogosphere. Twitter (follow #rstats) is a great place to start. You will quickly come across [rbloggers.com](https://www.r-bloggers.com/), a website that compiles posts from more than 300 blogs. A compilation of the best R stuff is available on [R Weekly](https://rweekly.org/).
+
+For individual topics in R, I would highly recommend finding a book.[^ironic-note] There is a great meta-resource, the [Big Book of R](https://www.bigbookofr.com/), a bookdown-style collection (open-source, obviously) of 250 books (mostly free/open-source, obviously) about every topic related to R you could imagine.
+
+[^ironic-note]: This is an opportune moment to show how awesome the open-source community is. The publication of free books on R has boomed because of `bookdown`, [an open-source tool](https://bookdown.org/) for writing and publishing books (which are often themselves open-source and are about open-source tools) using R Markdown.
 
 **If you want more fundamental data science skills**, Hadley Wickham, Chief Data Scientist at RStudio, is a staple of the R community and the mastermind behind `tidyverse`. A [YouTube search](https://www.youtube.com/results?search_query=Hadley+Wickham+lecture) for his lectures reveals a treasure-trove of examples of data science workflow and tidy tools.
 
@@ -1110,11 +1127,10 @@ The R community online is incredibly strong. That means, first and foremost, tha
 **If you want more data science**, [R + Data Science](https://yards.albert-rapp.de/) has a good list of resources and covers some other data science territory. Perhaps the best resource it mentions is [Introduction to Statistical Learning](https://www.statlearning.com/), a canonical data science textbook (with lots of math). A relatively new companion was just released by Emil Hvitfeldt, one of the masterminds of `tidymodels` at RStudio, that uses the `tidymodels` framework to do the labs in Introduction to Statistical Learning.
 
 
-
 All of these resources are available online for free.[^ngm]
 
-[^ngm]: It's disappointing that this is unimaginable in economics and most old, stuffy fields. The fact that Hadley Wickham and a couple of the folks at RStudio created the premier framework for data wrangling and visualization in `tidyverse`, wrote a few books about it, and then made it all free online while N. Gregory Mankiw still sells introductory economics textbooks for \$86 a pop never ceases to amaze me.
+[^ngm]: It's disappointing that this is unimaginable in economics and most old, stuffy fields. The fact that Hadley Wickham and a couple of the folks at RStudio created the premier framework for data wrangling and visualization in `tidyverse`, wrote a few books about it, and then made it all free online while introductory economics textbooks that could be a dime a dozen still regularly sell for \$70+ never ceases to amaze me.
 
-I hope some of these are useful!
+I hope some of these resources are useful! I highly recommend skimming, I frequently stumble upon useful information without reading deeply.
 
 
